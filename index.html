@@ -118,8 +118,8 @@ textarea#pasteArea:focus{border-color:#3A4756}
 .wo-chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
 /* ---- Map ---- */
-#mapBox{margin-top:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)}
-#map{height:300px;width:100%;background:var(--surface-2)}
+#mapBox{margin-top:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);position:relative}
+#map{height:340px;width:100%;background:var(--surface-2)}
 .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.92) saturate(.9)}
 .leaflet-popup-content-wrapper{background:var(--surface-3);color:var(--text);border-radius:10px;box-shadow:var(--shadow)}
 .leaflet-popup-content{font-family:var(--sans);font-size:12.5px;margin:9px 11px}
@@ -128,6 +128,28 @@ textarea#pasteArea:focus{border-color:#3A4756}
 .leaflet-control-attribution{background:rgba(11,15,20,.7)!important;color:var(--text-faint)!important;font-size:9px!important}
 .leaflet-control-attribution a{color:var(--text-dim)!important}
 .leaflet-control-zoom a{background:var(--surface-3)!important;color:var(--text)!important;border-color:var(--border)!important}
+
+/* Permanent Site ID labels on the map */
+.site-label{
+  background:rgba(11,15,20,.88)!important;border:1px solid rgba(255,255,255,.14)!important;
+  color:var(--text)!important;font-family:var(--mono)!important;font-size:10.5px!important;font-weight:700!important;
+  padding:2px 6px!important;border-radius:6px!important;box-shadow:0 2px 8px rgba(0,0,0,.4)!important;
+  white-space:nowrap;
+}
+.site-label::before{display:none!important}
+
+/* Map expand / fullscreen toggle */
+.map-expand-btn{
+  position:absolute;top:10px;right:10px;z-index:401;width:34px;height:34px;border-radius:9px;
+  background:var(--surface-3);border:1px solid var(--border);color:var(--text);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
+}
+#mapBox.fullscreen{position:fixed;inset:0;z-index:200;border-radius:0;border:none;box-shadow:none}
+#mapBox.fullscreen #map{height:100vh}
+.map-hint{
+  position:absolute;left:10px;bottom:10px;z-index:401;background:rgba(11,15,20,.82);border:1px solid var(--border);
+  color:var(--text-dim);font-size:10.5px;padding:5px 10px;border-radius:8px;font-family:var(--mono);
+}
 
 /* ---- Day cards ---- */
 .day-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;overflow:hidden}
@@ -241,7 +263,13 @@ ZND058	Nabeel 0508130494	Wireless"></textarea>
         <div class="chip-row" id="woBreakdown"></div>
       </div>
 
-      <div id="mapBox"><div id="map"></div></div>
+      <div id="mapBox">
+        <div id="map"></div>
+        <button class="map-expand-btn" id="mapExpandBtn" title="Expand map" aria-label="Expand map">
+          <svg id="expandIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 3H3v6M15 3h6v6M3 15v6h6M21 15v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="map-hint">Pinch / scroll to zoom</div>
+      </div>
 
       <div id="unmatchedCard" class="card hidden">
         <div class="section-label">Couldn't Match These Site IDs</div>
@@ -560,6 +588,7 @@ function renderMap(days){
         radius: 9, color: "#0B0F14", weight: 2, fillColor: color, fillOpacity: 1
       }).addTo(mapInstance);
       marker.bindPopup(`<b>${esc(s.siteId)}</b><br>Day ${di+1} · Stop ${si+1}${s.woType ? "<br>" + esc(s.woType) : ""}`);
+      marker.bindTooltip(esc(s.siteId), { permanent: true, direction: "top", offset: [0, -10], className: "site-label" });
       latlngs.push([s.lat, s.lng]);
       bounds.push([s.lat, s.lng]);
     });
@@ -567,6 +596,19 @@ function renderMap(days){
   });
   mapInstance.fitBounds(bounds, { padding: [28, 28] });
 }
+
+const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 3H3v6M15 3h6v6M3 15v6h6M21 15v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const COLLAPSE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 9h6V3M21 9h-6V3M3 15h6v6M21 15h-6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+$("mapExpandBtn").addEventListener("click", () => {
+  const box = $("mapBox");
+  const isFull = box.classList.toggle("fullscreen");
+  $("expandIcon").outerHTML = isFull
+    ? COLLAPSE_ICON.replace("<svg ", '<svg id="expandIcon" ')
+    : EXPAND_ICON.replace("<svg ", '<svg id="expandIcon" ');
+  $("mapExpandBtn").title = isFull ? "Collapse map" : "Expand map";
+  document.body.style.overflow = isFull ? "hidden" : "";
+  setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 260);
+});
 function routeUrl(day){
   if (day.length === 1) return `https://www.google.com/maps/search/?api=1&query=${day[0].lat},${day[0].lng}`;
   const origin = `${day[0].lat},${day[0].lng}`;
