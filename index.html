@@ -120,7 +120,7 @@ textarea#pasteArea:focus{border-color:#3A4756}
 /* ---- Map ---- */
 #mapBox{margin-top:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);position:relative}
 #map{height:340px;width:100%;background:var(--surface-2)}
-.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.92) saturate(.9)}
+.leaflet-tile-pane{filter:brightness(.94) contrast(1.05) saturate(1.05)}
 .leaflet-popup-content-wrapper{background:var(--surface-3);color:var(--text);border-radius:10px;box-shadow:var(--shadow)}
 .leaflet-popup-content{font-family:var(--sans);font-size:12.5px;margin:9px 11px}
 .leaflet-popup-content b{font-family:var(--mono);color:var(--amber-2)}
@@ -575,8 +575,11 @@ function renderMap(days){
 
   if (mapInstance){ mapInstance.remove(); mapInstance = null; }
   mapInstance = L.map("map", { attributionControl: true, zoomControl: true });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: "&copy; OpenStreetMap contributors"
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics"
+  }).addTo(mapInstance);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19
   }).addTo(mapInstance);
 
   const bounds = [];
